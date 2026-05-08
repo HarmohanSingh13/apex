@@ -1,16 +1,16 @@
-# Mahindra AI-SDLC Framework
+# AI-SDLC Framework
 
-Enterprise-grade agentic SDLC skills and workflows for .NET Core + Angular projects — works with Claude Code, Cursor, GitHub Copilot, Gemini CLI, Kiro, and more.
+Enterprise-grade agentic SDLC skills and workflows for .NET Core + Angular projects — works with Claude Code, Cursor, GitHub Copilot, Gemini CLI, Kiro, OpenCode, and more.
 
 ## Install
 
 Run this once in any project root:
 
 ```bash
-npx @mahindra/ai-sdlc install
+npx github:HarmohanSingh13/apex
 ```
 
-The CLI detects which AI agent(s) you use and copies the right files into your project:
+The CLI auto-detects which AI agent(s) you use and copies the right files into your project:
 
 | Agent | Installed Path |
 |-------|---------------|
@@ -27,41 +27,31 @@ If no agent directory is detected, `.agents/` is installed as a universal fallba
 ### Options
 
 ```bash
-# Install for all agents, not just detected ones
-npx @mahindra/ai-sdlc install --all
+# Install for all agents, not just auto-detected ones
+npx github:HarmohanSingh13/apex install --all
 
 # Preview what would be installed without writing any files
-npx @mahindra/ai-sdlc install --dry-run
+npx github:HarmohanSingh13/apex install --dry-run
 
 # Add a prefix to all installed skill/rule names
-npx @mahindra/ai-sdlc install --prefix=sdlc
+npx github:HarmohanSingh13/apex install --prefix=sdlc
 ```
 
 ## What Gets Installed
 
-### Skills
+Seven workflows covering the full SDLC — each one is a focused AI agent that knows your stack deeply:
 
-| Skill | Purpose |
-|-------|---------|
-| `.NET Core Backend` | Clean Architecture, EF Core + Dapper, FluentValidation, Serilog, JWT auth |
-| `Angular Frontend` | Angular 18 standalone components, Signals, reactive forms, Jest/Cypress |
-| `UI/UX — Mahindra Theme` | Mahindra Rise design system components and tokens |
-| `UI/UX — Swaraj Theme` | Swaraj StoreTAT design system |
-| `Security Guardrails` | OWASP Top 10, secure coding patterns, SOC review checklist |
-| `External Integrations` | SAP OData / RFC/BAPI anti-corruption layer, service adapters |
-| `Azure DevOps CI/CD` | Pipeline templates for .NET and Angular builds, security scans |
-
-### Workflows
-
-| Workflow | Purpose |
-|----------|---------|
-| `orchestrator` | Supreme hub — single entry point for all SDLC work |
-| `requirements` | User stories, BRD, acceptance criteria, sprint planning |
+| Workflow | When to use it |
+|----------|---------------|
+| `orchestrator` | Start here — routes you to the right phase automatically |
+| `requirements` | Gathering user stories, BRD, acceptance criteria, sprint planning |
 | `design` | Architecture decisions, API contracts, DB schema, sequence diagrams |
-| `development` | TDD feature implementation, PR flow, OWASP compliance |
-| `testing` | Jest / xUnit / Cypress full test suites |
+| `development` | Implementing features with TDD, PR flow, OWASP compliance |
+| `testing` | Writing Jest / xUnit / Cypress test suites |
 | `soc-review` | Security-focused code review against OWASP Top 10 |
 | `devops` | Azure DevOps / Jenkins pipeline setup and configuration |
+
+Each workflow carries deep knowledge of the stack (.NET Core 8, Angular 18, Clean Architecture, Azure) so your AI agent doesn't need to be re-briefed on every task.
 
 ## Usage After Install
 
@@ -79,7 +69,7 @@ Or invoke any phase agent directly:
 /requirements   /design   /development   /testing   /soc-review   /devops
 ```
 
-### Cursor / Copilot / Gemini / Kiro
+### Cursor / Copilot / Gemini / Kiro / OpenCode
 
 The installed rule/instruction file tells your agent to read the relevant workflow file. For example, to start development work:
 
@@ -96,6 +86,11 @@ Read .agents/workflows/orchestrator.md and proceed.
 ## Repository Structure
 
 ```
+src/                    # CLI TypeScript source
+dist/                   # Compiled CLI (committed)
+templates/              # Bundled agent files (committed)
+scripts/sync.js         # Syncs .agents/ etc. into templates/ before build
+
 .agents/
 ├── workflows/          # Phase workflow definitions
 │   ├── orchestrator.md
@@ -122,13 +117,18 @@ Read .agents/workflows/orchestrator.md and proceed.
 .opencode/              # OpenCode agent config
 ```
 
-## Publishing
+## Updating the Framework
+
+When you modify any agent files (`.agents/`, `.claude/`, etc.), rebuild and commit:
 
 ```bash
-cd packages/ai-sdlc-cli
-npm run build           # syncs templates + compiles TypeScript
-npm publish --access public
+npm run build           # syncs templates/ + compiles TypeScript
+git add dist/ templates/
+git commit -m "chore: update skills"
+git push
 ```
+
+Users get the update next time they run `npx github:HarmohanSingh13/apex`.
 
 ## Stack
 
