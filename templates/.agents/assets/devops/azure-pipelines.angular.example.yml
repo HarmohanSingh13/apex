@@ -1,0 +1,66 @@
+# ----------------------------------------------------------------------------------- #
+# Description:
+#   Deployment pipeline for the ENTER-APP-NAME frontend application (Angular 18).
+#
+# Replace all ENTER-* placeholders with real values.
+# ----------------------------------------------------------------------------------- #
+
+name: ENTER-APP-NAME-Frontend-$(date:yyyyMMdd)$(rev:.r)
+
+trigger:
+  branches:
+    include:
+      - develop
+      - developers/*
+    exclude:
+      - main
+
+pr:
+  branches:
+    include:
+      - main      # Pull requests targeting main should trigger the pipeline
+
+# Global Variables.
+# Switches to the prod variable group when the PR source branch is 'release' (release → main).
+# All other triggers (develop, developers/*) use the dev variable group.
+variables:
+  - ${{ if eq(variables['System.PullRequest.SourceBranch'], 'release') }}:
+    - group: 'ENTER-APP-PROD-VARIABLE-GROUP'    # e.g. dmu-prod-variables
+
+  - ${{ if ne(variables['System.PullRequest.SourceBranch'], 'release') }}:
+    - group: 'ENTER-APP-DEV-VARIABLE-GROUP'     # e.g. dmu-dev-variables
+
+  - group: 'security-scan-variables'
+
+  - name: skipSecurityScan
+    value: 'true'
+
+  - name: buildAgentPool
+    value: 'self-hosted-agent'  # Use 'Azure Pipelines' or 'self-hosted-agent'
+
+resources:
+  repositories:
+    - repository: Pipeline-Templates
+      type: git
+      name: ENTER-AZDO-PROJECT/ENTER-TEMPLATE-REPO
+      ref: refs/tags/ENTER-TEMPLATE-VERSION   # e.g. refs/tags/v1.2.1
+
+extends:
+  template: angular-actions.yml@Pipeline-Templates
+  parameters:
+    buildAgentPool: '$(buildAgentPool)'
+    # frontendPath: 'ENTER-RELATIVE-PATH-TO-ANGULAR-ROOT'  # Only needed for mono-repo layouts
+    #                                                        # where azure-pipelines.yml is at
+    #                                                        # the repo root and angular.json is
+    #                                                        # in a subdirectory (e.g. 'src/frontend').
+    #                                                        # Omit for split-repo where this file
+    #                                                        # lives alongside angular.json.
+    snykServiceConnection: 'ENTER-SNYK-SERVICE-CONNECTION'
+    snykToken: '$(snykToken)'
+    skipSecurityScan: '$(skipSecurityScan)'
+    checkmarxProjectName: '$(checkmarxProjectName)'
+    checkmarxUsername: '$(checkmarxUsername)'
+    checkmarxPassword: '$(checkmarxPassword)'
+    checkmarxPreset: '$(checkmarxPreset)'
+    azureServiceConnection: '$(azureServiceConnection)'
+    webappName: '$(webappName)'

@@ -1,0 +1,102 @@
+{
+  "_metadata": {
+    "version": "1.0",
+    "owner": "Information Security / CISO Office",
+    "classification": "INTERNAL — RESTRICTED",
+    "description": "License allowlist/denylist policy for all AI-SDLC projects. Used by the license CI gate in all pipeline scaffolding and verified during SOC Review (Step 5).",
+    "tools": [
+      "npm: license-checker-rseidelsohn (--onlyAllow / --failOn)",
+      "dotnet: nuget-license (--allowed-license-types)",
+      "python: pip-licenses (--allow-only)"
+    ],
+    "review_cadence": "Quarterly or on any new SPDX license addition to the ecosystem",
+    "last_updated": "2026-05-07"
+  },
+
+  "policy": {
+    "on_denied_license":  "BLOCK",
+    "on_unknown_license": "WARN_AND_REQUIRE_LEGAL_REVIEW",
+    "on_warned_license":  "WARN"
+  },
+
+  "denied": {
+    "description": "These licenses impose copyleft obligations that are incompatible with proprietary Mahindra software. Any dependency using these licenses MUST NOT be introduced. Violation = pipeline FAIL and Critical SOC finding.",
+    "spdx_ids": [
+      "GPL-2.0",
+      "GPL-2.0-only",
+      "GPL-2.0-or-later",
+      "GPL-3.0",
+      "GPL-3.0-only",
+      "GPL-3.0-or-later",
+      "AGPL-1.0",
+      "AGPL-3.0",
+      "AGPL-3.0-only",
+      "AGPL-3.0-or-later",
+      "SSPL-1.0",
+      "EUPL-1.1",
+      "EUPL-1.2",
+      "OSL-3.0",
+      "CDDL-1.0",
+      "CDDL-1.1",
+      "EPL-1.0",
+      "EPL-2.0"
+    ]
+  },
+
+  "warned": {
+    "description": "These licenses may impose redistribution or attribution requirements. Permitted for use but require legal team awareness. Flag in SOC Review — document justification in SECURITY.md.",
+    "spdx_ids": [
+      "LGPL-2.0",
+      "LGPL-2.0-only",
+      "LGPL-2.0-or-later",
+      "LGPL-2.1",
+      "LGPL-2.1-only",
+      "LGPL-2.1-or-later",
+      "LGPL-3.0",
+      "LGPL-3.0-only",
+      "LGPL-3.0-or-later",
+      "MPL-1.1",
+      "MPL-2.0",
+      "CPAL-1.0",
+      "CC-BY-SA-4.0"
+    ]
+  },
+
+  "allowed": {
+    "description": "Permissive licenses approved for use in all Mahindra AI-SDLC projects without restriction. No additional legal review required.",
+    "spdx_ids": [
+      "MIT",
+      "MIT-0",
+      "Apache-2.0",
+      "BSD-2-Clause",
+      "BSD-3-Clause",
+      "BSD-4-Clause",
+      "ISC",
+      "0BSD",
+      "Unlicense",
+      "CC0-1.0",
+      "CC-BY-4.0",
+      "CC-BY-3.0",
+      "WTFPL",
+      "Zlib",
+      "Python-2.0",
+      "PSF-2.0",
+      "MS-PL",
+      "MS-RSL",
+      "BlueOak-1.0.0",
+      "Artistic-2.0"
+    ]
+  },
+
+  "exceptions": {
+    "description": "Specific package-level overrides, approved by CISO + Legal. Each entry requires a justification and expiry date. Do NOT add entries here without written CISO approval.",
+    "entries": []
+  },
+
+  "ci_integration": {
+    "npm_command": "license-checker-rseidelsohn --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;Unlicense;CC0-1.0;BlueOak-1.0.0' --excludePrivatePackages --production",
+    "dotnet_command": "nuget-license --input . --allowed-license-types 'MIT,Apache-2.0,BSD-2-Clause,BSD-3-Clause,ISC' --error-only",
+    "pipeline_gate": "Block on any denied SPDX ID match; warn on warned list; pass on allowed list; unknown = warn + open legal review ticket",
+    "report_artifact": "license-report.json (upload as CI artifact per pipeline run)"
+  }
+}

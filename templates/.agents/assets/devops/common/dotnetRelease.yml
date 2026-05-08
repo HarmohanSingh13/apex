@@ -1,0 +1,52 @@
+---
+parameters:
+  - name: azureServiceConnection
+    type: string
+  - name: webappName
+    type: string
+  - name: virtualDirectory
+    type: string
+  - name: dbProvider
+    type: string
+  - name: dbConnectionString
+    type: string
+  - name: jwtSecret
+    type: string
+  - name: aspnetcoreEnvironment
+    type: string
+    default: 'Production'
+
+steps:
+  - task: DownloadPipelineArtifact@2
+    displayName: 'Download dotnet Artifact'
+    inputs:
+      artifactName: '$(Build.DefinitionName)'
+      targetPath: '$(System.DefaultWorkingDirectory)'
+
+  - task: AzureAppServiceSettings@1
+    displayName: 'Push app settings to App Service'
+    inputs:
+      azureSubscription: '${{ parameters.azureServiceConnection }}'
+      appName: '${{ parameters.webappName }}'
+      appSettings: |
+        [
+          { "name": "ASPNETCORE_ENVIRONMENT",               "value": "${{ parameters.aspnetcoreEnvironment }}", "slotSetting": false },
+          { "name": "DatabaseProvider",                     "value": "${{ parameters.dbProvider }}",            "slotSetting": false },
+          { "name": "ConnectionStrings__DefaultConnection",  "value": "${{ parameters.dbConnectionString }}",   "slotSetting": false },
+          { "name": "Jwt__Secret",                          "value": "${{ parameters.jwtSecret }}",             "slotSetting": false }
+        ]
+
+  - task: AzureRmWebAppDeployment@4
+    displayName: 'Deploying app on Webapp'
+    inputs:
+      ConnectionType: 'AzureRM'
+      azureSubscription: '${{ parameters.azureServiceConnection }}'
+      appType: 'webApp'
+      WebAppName: '${{ parameters.webappName }}'
+      VirtualApplication: '${{ parameters.virtualDirectory }}'
+      packageForLinux: "$(System.DefaultWorkingDirectory)/**/*.zip"
+      enableCustomDeployment: true
+      DeploymentType: 'webDeploy'
+      RemoveAdditionalFilesFlag: true
+      ExcludeFilesFromAppDataFlag: false
+      RenameFilesFlag: false

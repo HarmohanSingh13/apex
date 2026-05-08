@@ -1,0 +1,47 @@
+---
+steps:
+# - task: NuGetToolInstaller@1
+#   displayName: NuGet-Install
+#   inputs:
+#     versionSpec: '5.8'
+
+- task: UseDotNet@2
+  displayName: DotNet-Install
+  inputs:
+    packageType: 'sdk'
+    version: '6.x'
+    performMultiLevelLookup: true
+
+- task: DotNetCoreCLI@2
+  displayName: "Dotnet Restore"
+  inputs:
+    command: restore
+    projects: '**/*.csproj'
+    # verbosityRestore: Detailed
+    # verbosityPack: Detailed
+
+- task: DotNetCoreCLI@2
+  displayName: "Dotnet Build"
+  inputs:
+    projects: "**/*.csproj"
+    arguments: '--configuration Release --output $(build.artifactstagingdirectory)'
+    # verbosityRestore: Detailed
+    # verbosityPack: Detailed
+
+- task: DotNetCoreCLI@2
+  displayName: "Dotnet Publish"
+  inputs:
+    command: publish
+    projects: "**/*.csproj"
+    publishWebProjects: true
+    arguments: '--configuration Release --output "$(build.artifactstagingdirectory)\$(Build.DefinitionName)"'
+    # zipAfterPublish: true
+    # verbosityRestore: Detailed
+    # verbosityPack: Detailed
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact'
+  inputs:
+    PathtoPublish: '$(build.artifactstagingdirectory)'
+    ArtifactName: '$(Build.DefinitionName)'
+  condition: succeededOrFailed()

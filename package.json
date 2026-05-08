@@ -1,11 +1,37 @@
 {
   "name": "ai-sdlc",
-  "private": true,
-  "workspaces": [
-    "packages/*"
+  "version": "1.0.0",
+  "description": "Enterprise AI-SDLC framework — install Claude, Cursor, Gemini, Copilot, Kiro and more agent skills into any project.",
+  "type": "module",
+  "keywords": ["claude", "ai", "sdlc", "angular", "dotnet", "cursor", "copilot", "gemini", "kiro", "opencode"],
+  "license": "UNLICENSED",
+  "bin": {
+    "ai-sdlc": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "templates"
   ],
   "scripts": {
-    "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces --if-present"
+    "sync": "node scripts/sync.js",
+    "prebuild": "node scripts/sync.js",
+    "build": "node node_modules/typescript/bin/tsc",
+    "dev": "node node_modules/typescript/bin/tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/HarmohanSingh13/apex.git"
   }
 }
