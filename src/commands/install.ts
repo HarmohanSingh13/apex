@@ -1,16 +1,14 @@
 import chalk from 'chalk';
-import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { detectProviders, PROVIDERS } from '../lib/providers.js';
 import { installProvider } from '../lib/installer.js';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-// dist/commands/ → ../../templates  (same relative depth whether nested or at root)
-const templatesDir = join(__dirname, '../../templates');
+// After esbuild bundles to dist/index.js, process.argv[1] = dist/index.js
+// So dirname gives dist/ and ../templates gives the templates/ root
+const templatesDir = join(dirname(process.argv[1]), '../templates');
 
 export interface InstallOptions {
   all?: boolean;
-  prefix?: string;
   dryRun?: boolean;
 }
 
@@ -30,7 +28,7 @@ export async function installCommand(options: InstallOptions): Promise<void> {
   } else {
     // Nothing detected — install generic .agents/ as a useful fallback
     toInstall = ['agents'];
-    console.log(chalk.yellow('  No agent directories detected. Installing generic .agents/ skills.'));
+    console.log(chalk.yellow('  No agent directories detected. Installing generic .agents/ workflows.'));
     console.log(chalk.dim('  Tip: run with --all to install adapters for all supported agents.\n'));
   }
 
@@ -46,7 +44,6 @@ export async function installCommand(options: InstallOptions): Promise<void> {
       targetDir,
       provider,
       config,
-      prefix: options.prefix,
       dryRun: options.dryRun ?? false,
     });
 
@@ -69,10 +66,7 @@ export async function installCommand(options: InstallOptions): Promise<void> {
   }
 
   if (installedCount > 0) {
-    console.log(chalk.green(`  Done! Skills installed for ${installedCount} agent(s).`));
-    if (options.prefix) {
-      console.log(chalk.dim(`  Prefix applied: "${options.prefix}"`));
-    }
+    console.log(chalk.green(`  Done! Workflows installed for ${installedCount} agent(s).`));
   } else {
     console.log(chalk.dim('  Everything is already up to date.'));
   }
