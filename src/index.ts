@@ -1,27 +1,30 @@
-import { Command } from 'commander';
 import { installCommand } from './commands/install.js';
 
-// package version — esbuild inlines this at build time
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const pkg = require('../package.json') as { version: string };
 
-const program = new Command();
+const args = process.argv.slice(2);
 
-program
-  .name('ai-sdlc')
-  .description('Enterprise AI-SDLC Framework — install agent workflows into any project')
-  .version(pkg.version);
+if (args.includes('--version') || args.includes('-v')) {
+  console.log(pkg.version);
+  process.exit(0);
+}
 
-program
-  .command('install')
-  .description('Install AI-SDLC workflows into the current project')
-  .option('--all', 'Install for all supported agents, even if not auto-detected')
-  .option('--dry-run', 'Preview what would be installed without writing files')
-  .action(installCommand);
+if (args.includes('--help') || args.includes('-h')) {
+  console.log(`
+  ai-sdlc v${pkg.version}
+  Enterprise AI-SDLC Framework
 
-// default: run install when no command given (npx github:org/apex)
-program.action(() => {
-  installCommand({ all: false });
-});
+  Usage:
+    npx github:HarmohanSingh13/apex           Auto-detect agent and install
+    npx github:HarmohanSingh13/apex --all     Install for all supported agents
 
-program.parse();
+  Options:
+    --all         Install for all agents, not just auto-detected
+    --version     Show version number
+    --help        Show this help message
+`);
+  process.exit(0);
+}
+
+installCommand({ all: args.includes('--all') });

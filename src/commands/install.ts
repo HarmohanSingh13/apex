@@ -1,15 +1,15 @@
 import chalk from 'chalk';
+import { createInterface } from 'readline';
 import { dirname, join } from 'path';
 import { detectProviders, PROVIDERS } from '../lib/providers.js';
 import { installProvider } from '../lib/installer.js';
 
 // After esbuild bundles to dist/index.js, process.argv[1] = dist/index.js
-// So dirname gives dist/ and ../templates gives the templates/ root
+// dirname gives dist/ and ../templates gives the templates/ root
 const templatesDir = join(dirname(process.argv[1]), '../templates');
 
 export interface InstallOptions {
   all?: boolean;
-  dryRun?: boolean;
 }
 
 export async function installCommand(options: InstallOptions): Promise<void> {
@@ -20,19 +20,19 @@ export async function installCommand(options: InstallOptions): Promise<void> {
   const detected = detectProviders(targetDir);
 
   let toInstall: string[];
+
   if (options.all) {
     toInstall = Object.keys(PROVIDERS);
+    console.log(chalk.dim('  Installing for all supported agents...\n'));
   } else if (detected.length > 0) {
     toInstall = detected;
     console.log(chalk.dim(`  Detected: ${detected.map(k => PROVIDERS[k].label).join(', ')}\n`));
   } else {
-    toInstall = ['agents'];
-    console.log(chalk.yellow('  No agent directories detected. Installing generic .agents/ workflows.'));
-    console.log(chalk.dim('  Tip: run with --all to install adapters for all supported agents.\n'));
+    // Nothing detected — ask the user interactively
+    toInstall = await promptForAgents();
   }
 
   let installedCount = 0;
-  let upToDateCount  = 0;
 
   for (const provider of toInstall) {
     const config = PROVIDERS[provider];
@@ -43,32 +43,56 @@ export async function installCommand(options: InstallOptions): Promise<void> {
       targetDir,
       provider,
       config,
-      dryRun: options.dryRun ?? false,
+      dryRun: false,
     });
 
     if (result.installed > 0) {
-      const icon = options.dryRun ? chalk.cyan('  ○') : chalk.green('  ✓');
-      console.log(`${icon} ${chalk.bold(config.label)}`);
+      console.log(`${chalk.green('  ✓')} ${chalk.bold(config.label)}`);
       console.log(chalk.dim(`    → ${config.targetDir}  (${result.installed} file${result.installed !== 1 ? 's' : ''})`));
       installedCount++;
     } else {
       console.log(chalk.dim(`  - ${config.label} — already up to date`));
-      upToDateCount++;
     }
   }
 
   console.log('');
 
-  if (options.dryRun) {
-    console.log(chalk.cyan('  Dry run complete. No files were written.\n'));
-    return;
-  }
-
   if (installedCount > 0) {
-    console.log(chalk.green(`  Done! Workflows installed for ${installedCount} agent(s).`));
+    console.log(chalk.green(`  Done! Workflows installed for ${installedCount} agent(s).\n`));
   } else {
-    console.log(chalk.dim('  Everything is already up to date.'));
+    console.log(chalk.dim('  Everything is already up to date.\n'));
   }
+}
 
-  console.log('');
+async function promptForAgents(): Promise<string[]> {
+  const entries = Object.entries(PROVIDERS);
+
+  console.log(chalk.yellow('  No agent directory detected in this project.\n'));
+  console.log('  Which AI agent are you using?\n');
+
+  entries.forEach(([, cfg], i) => {
+    console.log(`    ${chalk.bold(String(i + 1))}) ${cfg.label}`);
+  });
+  console.log(`    ${chalk.bold(String(entries.length + 1))}) All of the above\n`);
+
+  const rl = createInterface({ input: process.stdin, output: process.stdout });
+
+  return new Promise((resolve) => {
+    rl.question('  Enter number: ', (answer) => {
+      rl.close();
+      console.log('');
+
+      const num = parseInt(answer.trim(), 10);
+
+      if (num === entries.length + 1) {
+        resolve(entries.map(([key]) => key));
+      } else if (num >= 1 && num <= entries.length) {
+        resolve([entries[num - 1][0]]);
+      } else {
+        // Invalid input — fall back to generic .agents/
+        console.log(chalk.dim('  Invalid selection. Installing generic .agents/ as fallback.\n'));
+        resolve(['agents']);
+      }
+    });
+  });
 }
