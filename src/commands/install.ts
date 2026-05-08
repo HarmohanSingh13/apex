@@ -1,8 +1,8 @@
-import chalk from 'chalk';
 import { createInterface } from 'readline';
 import { dirname, join } from 'path';
 import { detectProviders, PROVIDERS } from '../lib/providers.js';
 import { installProvider } from '../lib/installer.js';
+import { bold, dim, green, yellow, cyan } from '../lib/ansi.js';
 
 // After esbuild bundles to dist/index.js, process.argv[1] = dist/index.js
 // dirname gives dist/ and ../templates gives the templates/ root
@@ -15,7 +15,7 @@ export interface InstallOptions {
 export async function installCommand(options: InstallOptions): Promise<void> {
   const targetDir = process.cwd();
 
-  console.log(chalk.bold('\n  AI-SDLC Framework\n'));
+  console.log(bold('\n  AI-SDLC Framework\n'));
 
   const detected = detectProviders(targetDir);
 
@@ -23,12 +23,11 @@ export async function installCommand(options: InstallOptions): Promise<void> {
 
   if (options.all) {
     toInstall = Object.keys(PROVIDERS);
-    console.log(chalk.dim('  Installing for all supported agents...\n'));
+    console.log(dim('  Installing for all supported agents...\n'));
   } else if (detected.length > 0) {
     toInstall = detected;
-    console.log(chalk.dim(`  Detected: ${detected.map(k => PROVIDERS[k].label).join(', ')}\n`));
+    console.log(dim(`  Detected: ${detected.map(k => PROVIDERS[k].label).join(', ')}\n`));
   } else {
-    // Nothing detected — ask the user interactively
     toInstall = await promptForAgents();
   }
 
@@ -47,33 +46,33 @@ export async function installCommand(options: InstallOptions): Promise<void> {
     });
 
     if (result.installed > 0) {
-      console.log(`${chalk.green('  ✓')} ${chalk.bold(config.label)}`);
-      console.log(chalk.dim(`    → ${config.targetDir}  (${result.installed} file${result.installed !== 1 ? 's' : ''})`));
+      console.log(`${green('  ✓')} ${bold(config.label)}`);
+      console.log(dim(`    → ${config.targetDir}  (${result.installed} file${result.installed !== 1 ? 's' : ''})`));
       installedCount++;
     } else {
-      console.log(chalk.dim(`  - ${config.label} — already up to date`));
+      console.log(dim(`  - ${config.label} — already up to date`));
     }
   }
 
   console.log('');
 
   if (installedCount > 0) {
-    console.log(chalk.green(`  Done! Workflows installed for ${installedCount} agent(s).\n`));
+    console.log(green(`  Done! Workflows installed for ${installedCount} agent(s).\n`));
   } else {
-    console.log(chalk.dim('  Everything is already up to date.\n'));
+    console.log(dim('  Everything is already up to date.\n'));
   }
 }
 
 async function promptForAgents(): Promise<string[]> {
   const entries = Object.entries(PROVIDERS);
 
-  console.log(chalk.yellow('  No agent directory detected in this project.\n'));
+  console.log(yellow('  No agent directory detected in this project.\n'));
   console.log('  Which AI agent are you using?\n');
 
   entries.forEach(([, cfg], i) => {
-    console.log(`    ${chalk.bold(String(i + 1))}) ${cfg.label}`);
+    console.log(`    ${bold(String(i + 1))}) ${cfg.label}`);
   });
-  console.log(`    ${chalk.bold(String(entries.length + 1))}) All of the above\n`);
+  console.log(`    ${bold(String(entries.length + 1))}) All of the above\n`);
 
   const rl = createInterface({ input: process.stdin, output: process.stdout });
 
@@ -89,8 +88,7 @@ async function promptForAgents(): Promise<string[]> {
       } else if (num >= 1 && num <= entries.length) {
         resolve([entries[num - 1][0]]);
       } else {
-        // Invalid input — fall back to generic .agents/
-        console.log(chalk.dim('  Invalid selection. Installing generic .agents/ as fallback.\n'));
+        console.log(dim('  Invalid selection. Installing generic .agents/ as fallback.\n'));
         resolve(['agents']);
       }
     });
