@@ -1,0 +1,100 @@
+---
+parameters:
+  - name: snykServiceConnection
+    type: string
+  - name: snykToken
+    type: string
+  - name: checkmarxProjectName
+    type: string
+  - name: checkmarxUsername
+    type: string
+  - name: checkmarxPassword
+    type: string
+  - name: checkmarxPreset
+    type: string
+
+steps:
+  - task: SnykSecurityScan@1
+    displayName: Snyk Security Code Scan
+    inputs:
+      serviceConnectionEndpoint: '${{ parameters.snykServiceConnection }}'
+      testType: 'code'
+      severityThreshold: 'high'
+      monitorWhen: 'always'
+      failOnIssues: false
+
+  - task: DownloadSecureFile@1
+    name: mahindra
+    displayName: 'Download Mahindra Certificate'
+    inputs:
+      secureFile: 'mahindra.crt'
+
+  - task: bash@3
+    displayName: 'Checkmarx SAST Scan'
+    inputs:
+      targetType: 'inline'
+      script: |
+        echo "=================================="
+        echo "Installing Mahindra Certificate"
+        echo "=================================="
+
+        certPath="$(mahindra.secureFilePath)"
+
+        # Check if running on self-hosted agent
+        if [[ "$(Agent.Name)" == 'mazpdevopsvm01' ]]; then
+            # Convert the path to WSL format for self-hosted agent
+            certPath=$(echo $certPath | sed 's|\\|/|g' | sed 's|C:|/mnt/c|')
+        fi
+
+        if [ -f "$certPath" ]; then
+          echo "Certificate found at $certPath"
+          openssl x509 -in "$certPath" -out mahindra.pem -outform PEM
+        else
+          echo "Error: Certificate not found at $certPath"
+          exit 1
+        fi
+
+        #openssl x509 -in "$(mahindra.secureFilePath)" -out mahindra.pem -outform PEM
+
+        echo "=================================="
+        echo "Validating Mahindra Certificate"
+        echo "=================================="
+
+        ls -ltr 
+        
+        pwd
+        
+        echo "=================================="
+        
+        mkdir -p cxpluginf; 
+        curl -o cxpluginf/cxplugin.zip https://download.checkmarx.com/9.5.0/Plugins/CxConsolePlugin-1.1.18.zip; 
+        unzip cxpluginf/cxplugin.zip -d cxpluginf/;
+        
+        sed -i 's/scan.zip.max_size=200/scan.zip.max_size=1000/' cxpluginf/config/cx_console.properties
+        
+        echo "################# Running Scan ###############"
+
+        if [[ "$(Agent.Name)" == 'mazpdevopsvm01' ]]; then
+            # Convert the paths to WSL format for self-hosted agent
+            locationPath=$(echo "$(build.SourcesDirectory)" | sed 's|\\|/|g' | sed 's|C:|/mnt/c|')
+            reportXML="$(build.artifactstagingdirectory)/$(Build.DefinitionName)-SAST_Report.xml"
+            reportPDF="$(build.artifactstagingdirectory)/$(Build.DefinitionName)-SAST_Report.pdf"
+
+            # Convert report paths to WSL format
+            reportXML=$(echo "$reportXML" | sed 's|\\|/|g' | sed 's|C:|/mnt/c|')
+            reportPDF=$(echo "$reportPDF" | sed 's|\\|/|g' | sed 's|C:|/mnt/c|')
+        else
+            # Use the original paths if running on Azure Pipelines agent
+            locationPath="$(build.SourcesDirectory)"
+            reportXML="$(build.artifactstagingdirectory)/$(Build.DefinitionName)-SAST_Report.xml"
+            reportPDF="$(build.artifactstagingdirectory)/$(Build.DefinitionName)-SAST_Report.pdf"
+        fi
+        
+        cxpluginf/runCxConsole.sh Scan -v -CxServer 'https://checkmarx.mahindra-ad.com' -ProjectName '${{ parameters.checkmarxProjectName }}' -CxUser '${{ parameters.checkmarxUserName }}' -CxPassword '${{ parameters.checkmarxPassword }}' -Preset '${{ parameters.checkmarxPreset }}' -Incremental -LocationType folder -LocationPath $locationPath -TrustedCertificates -ReportXML $reportXML -ReportPDF $reportPDF
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Security Scans Reports'
+    inputs:
+      PathtoPublish: '$(build.artifactstagingdirectory)'
+      ArtifactName: '$(Build.DefinitionName)-Scan-Reports'
+    condition: succeededOrFailed()

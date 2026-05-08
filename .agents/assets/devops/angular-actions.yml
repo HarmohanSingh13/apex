@@ -1,0 +1,87 @@
+parameters:
+  - name: buildAgentPool
+    type: string
+  - name: frontendPath
+    type: string
+    default: '.'
+  - name: snykServiceConnection
+    type: string
+  - name: snykToken
+    type: string
+  - name: skipSecurityScan
+    type: string
+  - name: checkmarxProjectName
+    type: string
+  - name: checkmarxUsername
+    type: string
+  - name: checkmarxPassword
+    type: string
+  - name: checkmarxPreset
+    type: string
+  - name: azureServiceConnection
+    type: string
+  - name: webappName
+    type: string
+  - name: apiUrl          # Full backend API base URL including virtual directory
+    type: string          # e.g. https://<webapp>.azurewebsites.net/gyro
+    default: ''           # Sourced from variable group — never hardcode here
+
+stages:
+  - stage: ApplicationBuild
+    displayName: Application Build
+    condition: "ne(variables['Build.SourceBranch'], 'refs/heads/main')"
+    jobs:
+      - job: AngularBuild
+        displayName: Angular Build
+        pool:
+          name: ${{ parameters.buildAgentPool }}
+        steps:
+          # Inject apiUrl from variable group into Angular environment files before ng build.
+          # Source files must use #{apiUrl}# as a placeholder (not a hardcoded URL).
+          # This step replaces the token so ng build compiles the correct URL into the bundle.
+          - task: PowerShell@2
+            displayName: 'Inject apiUrl into Angular environment files'
+            inputs:
+              targetType: 'inline'
+              script: |
+                $dir = "${{ parameters.frontendPath }}/src/environments"
+                Get-ChildItem -Path $dir -Filter "environment*.ts" | ForEach-Object {
+                  (Get-Content $_.FullName) -replace '#{apiUrl}#', '${{ parameters.apiUrl }}' | Set-Content $_.FullName
+                }
+                Write-Host "apiUrl token replaced in environment files."
+
+          - template: common/angularBuild.yml
+            parameters:
+              workingDirectory: ${{ parameters.frontendPath }}
+
+  - stage: SecurityScan
+    displayName: Security Scans
+    condition: "and(succeeded('ApplicationBuild'), or(and(eq(variables['Build.Reason'],'PullRequest'), eq(variables['System.PullRequest.TargetBranch'], 'refs/heads/main'),eq(variables['System.PullRequest.SourceBranch'], 'refs/heads/release')),and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['skipSecurityScan'],'false'))))"
+    jobs:
+      - job: AngularSecurityScan
+        displayName: SCA & SAST Scan
+        pool:
+          name: ${{ parameters.buildAgentPool }}
+        steps:
+          - template: common/securityScans.yml
+            parameters:
+              snykServiceConnection: ${{ parameters.snykServiceConnection }}
+              snykToken: ${{ parameters.snykToken }}
+              checkmarxProjectName: ${{ parameters.checkmarxProjectName }}
+              checkmarxUsername: ${{ parameters.checkmarxUsername }}
+              checkmarxPassword: ${{ parameters.checkmarxPassword }}
+              checkmarxPreset: ${{ parameters.checkmarxPreset }}
+
+  - stage: ApplicationRelease
+    displayName: Application Release
+    condition: "and(succeeded('ApplicationBuild'), or(and(eq(variables['Build.Reason'],'PullRequest'), eq(variables['System.PullRequest.TargetBranch'], 'refs/heads/main'),eq(variables['System.PullRequest.SourceBranch'], 'refs/heads/release')),and(ne(variables['Build.Reason'], 'PullRequest'), or(eq(variables['Build.SourceBranch'],'refs/heads/develop'), startsWith(variables['Build.SourceBranch'],'refs/heads/developers/')))))"
+    jobs:
+      - job: ApplicationRelease
+        displayName: Application Deployment
+        pool:
+          name: ${{ parameters.buildAgentPool }}
+        steps:
+          - template: common/angularRelease.yml
+            parameters:
+              azureServiceConnection: ${{ parameters.azureServiceConnection }}
+              webappName: ${{ parameters.webappName }}

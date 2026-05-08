@@ -1,0 +1,47 @@
+---
+description: Mahindra AI-SDLC enterprise framework — orchestrated SDLC workflows for .NET Core + Angular projects
+alwaysApply: true
+---
+
+# Mahindra AI-SDLC Framework
+
+This project uses the Mahindra AI-SDLC framework. All software development work follows structured, phase-based workflows stored in `.agents/`.
+
+## Available Workflows
+
+| Phase | Workflow File |
+|-------|--------------|
+| **Orchestrator** (start here) | `.agents/workflows/orchestrator.md` |
+| Requirements & Planning | `.agents/workflows/requirements.md` |
+| Architecture & Design | `.agents/workflows/design.md` |
+| Feature Development | `.agents/workflows/development.md` |
+| Testing (Jest / xUnit / Cypress) | `.agents/workflows/testing.md` |
+| SOC / Security Review | `.agents/workflows/soc-review.md` |
+| Azure DevOps CI/CD | `.agents/workflows/devops.md` |
+
+## Available Skills
+
+| Skill | File |
+|-------|------|
+| .NET Core Backend | `.agents/skills/dotnet-backend/SKILL.md` |
+| Angular Frontend | `.agents/skills/angular-frontend/SKILL.md` |
+| UI/UX — Mahindra Theme | `.agents/skills/ui-ux-design/mahindra-theme-skill.md` |
+| UI/UX — Swaraj Theme | `.agents/skills/ui-ux-design/swaraj-theme-skill.md` |
+| Security Guardrails | `.agents/skills/security-guardrails/SECURITY_GUARDRAILS_SKILL.md` |
+| External Integrations | `.agents/skills/integrations/SKILL.md` |
+| Azure DevOps CI/CD | `.agents/skills/devops-azure-cicd/SKILL.md` |
+
+## How to Use
+
+1. **For any new task**, read `.agents/workflows/orchestrator.md` first — it is the single entry point that routes work to the right workflow.
+2. **For direct phase work**, read the relevant workflow file above.
+3. **Before writing code**, read the applicable skill file (dotnet-backend or angular-frontend) and the security guardrails skill.
+4. All workflow files contain complete, step-by-step instructions. Execute every step — do not summarise or skip.
+
+## Stack Context
+
+- **Backend**: ASP.NET Core 8, Minimal APIs, Clean Architecture, Dapper, SQL Server
+- **Frontend**: Angular 18, standalone components, Signals, SCSS
+- **Auth**: LDAP + JWT + CAPTCHA + concurrent login prevention
+- **CI/CD**: Azure DevOps / Jenkins + Helm/Kubernetes
+- **AI**: Azure OpenAI integration

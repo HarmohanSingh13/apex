@@ -1,0 +1,61 @@
+# ----------------------------------------------------------------------------------- #
+# Description:
+#   Deployment pipeline for the ENTER-APP-NAME application.
+#
+# ----------------------------------------------------------------------------------- #
+
+name: ENTER-APP-NAME-$(date:yyyyMMdd)$(rev:.r)
+
+trigger:
+  branches:
+    include:
+      - develop
+      - developers/*
+    exclude:
+      - main
+
+pr:
+  branches:
+    include:
+      - main      # Pull requests targeting main should trigger the pipeline
+
+# Global Variables.
+variables:
+  - ${{ if eq(variables['System.PullRequest.SourceBranch'], 'release') }}:
+    - group: 'ENTER-APP-NAME-prod-variables'
+
+  - ${{ if ne(variables['System.PullRequest.SourceBranch'], 'release') }}:
+    - group: 'ENTER-APP-NAME-dev-variables'
+
+  - group: 'security-scan-variables'
+
+  - name: skipSecurityScan
+    value: 'true'
+
+  - name: buildAgentPool
+    value: 'self-hosted-agent'  # Use 'Azure Pipelines' or 'self-hosted-agent'
+
+resources:
+  repositories:
+    - repository: Pipeline-Templates
+      type: git
+      name: ENTER-AZDO-PROJECT/Pipeline-Templates
+      ref: refs/tags/ENTER-TEMPLATE-VERSION   # e.g. refs/tags/v1.2.1
+
+extends:
+  template: dotnet-actions.yml@Pipeline-Templates
+  parameters:
+    buildAgentPool: '$(buildAgentPool)'
+    snykServiceConnection: '$(snykServiceConnection)'
+    snykToken: '$(snykToken)'
+    skipSecurityScan: '$(skipSecurityScan)'
+    checkmarxProjectName: '$(checkmarxProjectName)'
+    checkmarxUsername: '$(checkmarxUsername)'
+    checkmarxPassword: '$(checkmarxPassword)'
+    checkmarxPreset: '$(checkmarxPreset)'
+    azureServiceConnection: '$(azureServiceConnection)'
+    webappName: '$(webappName)'
+    virtualDirectory: '$(virtualDirectory)'
+    databaseProvider: '$(dbProvider)'
+    connectionString: '$(dbConnectionString)'
+    jwtSecret: '$(jwtSecret)'

@@ -1,0 +1,77 @@
+parameters:
+  - name: workingDirectory
+    type: string
+    default: '.'
+
+steps:
+- task: NodeTool@0
+  displayName: Install Node.js
+  inputs:
+    versionSpec: '18.x'
+
+- task: Bash@3
+  displayName: Install Dependencies
+  inputs:
+    targetType: inline
+    workingDirectory: ${{ parameters.workingDirectory }}
+    script: npm install --prefer-offline
+
+- task: Bash@3
+  displayName: Detect Build Configuration
+  inputs:
+    targetType: inline
+    script: |
+      BRANCH="$(Build.SourceBranch)"
+      if [[ "$BRANCH" == "refs/heads/develop" ]] || [[ "$BRANCH" == refs/heads/developers/* ]]; then
+        CONFIG="dev"
+      else
+        CONFIG="production"
+      fi
+      echo "Branch: $BRANCH  →  configuration: $CONFIG"
+      echo "##vso[task.setvariable variable=ngBuildConfig]$CONFIG"
+
+- task: Bash@3
+  displayName: Angular Build
+  inputs:
+    targetType: inline
+    workingDirectory: ${{ parameters.workingDirectory }}
+    script: npx ng build --configuration=$(ngBuildConfig)
+
+- task: PowerShell@2                                                                                                     
+  displayName: Stage browser output    
+  inputs:
+    targetType: inline
+    script: | # Resolve dist root — handle '.' workingDirectory explicitly
+      $workDir = '${{ parameters.workingDirectory }}'                                                                    
+      if ($workDir -eq '.' -or $workDir -eq '') {                                                                        
+        $distRoot = Join-Path '$(Build.SourcesDirectory)' 'dist'
+      } else {                                                                                                           
+        $distRoot = Join-Path '$(Build.SourcesDirectory)' $workDir 'dist'
+      }                                                                                                                     
+      Write-Host "=== Searching for browser output under: $distRoot ==="                                                    
+      if (-not (Test-Path $distRoot)) {                                                                                  
+        Write-Host "##vso[task.logissue type=error]dist/ not found at $distRoot — did ng build succeed?"
+        Write-Host "Sources directory contents:"                                                                                   
+        Get-ChildItem '$(Build.SourcesDirectory)' | Select-Object Name | Format-Table
+        exit 1                                                                                                                   
+        }
+        
+      Write-Host "dist/ structure:"                                                                                              
+      Get-ChildItem $distRoot -Recurse | Select-Object FullName | Format-Table
+                                                                                                                                 
+      $browserDir = Get-ChildItem -Path $distRoot -Recurse -Directory -Filter 'browser' | Select-Object -First 1                 
+      if (-not $browserDir) {
+        Write-Host "##vso[task.logissue type=error]No 'browser' subdirectory found — check angular.json outputPath and builder version"                                                                                                                   
+      exit 1
+      }                                                                                                                  
+      Write-Host "=== Staging from: $($browserDir.FullName) ==="                                                                 
+      Copy-Item -Path "$($browserDir.FullName)\*" -Destination '$(Build.ArtifactStagingDirectory)' -Recurse -Force
+      Write-Host "=== Artifact contents ==="                                                                             
+      Get-ChildItem '$(Build.ArtifactStagingDirectory)' | Select-Object Name | Format-Table      
+
+- task: PublishBuildArtifacts@1
+  displayName: Publish Artifact
+  condition: succeeded()
+  inputs:
+    PathtoPublish: $(Build.ArtifactStagingDirectory)
+    ArtifactName: $(Build.DefinitionName)
