@@ -6,9 +6,6 @@ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __getProtoOf = Object.getPrototypeOf;
 var __hasOwnProp = Object.prototype.hasOwnProperty;
-var __commonJS = (cb, mod) => function __require() {
-  return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
-};
 var __copyProps = (to, from, except, desc) => {
   if (from && typeof from === "object" || typeof from === "function") {
     for (let key of __getOwnPropNames(from))
@@ -25,57 +22,6 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   isNodeMode || !mod || !mod.__esModule ? __defProp(target, "default", { value: mod, enumerable: true }) : target,
   mod
 ));
-
-// package.json
-var require_package = __commonJS({
-  "package.json"(exports2, module2) {
-    module2.exports = {
-      name: "ai-sdlc",
-      version: "1.0.0",
-      description: "Enterprise AI-SDLC framework \u2014 install Claude, Cursor, Gemini, Copilot, Kiro and more agent workflows into any project.",
-      keywords: [
-        "claude",
-        "ai",
-        "sdlc",
-        "angular",
-        "dotnet",
-        "cursor",
-        "copilot",
-        "gemini",
-        "kiro",
-        "opencode"
-      ],
-      license: "UNLICENSED",
-      bin: {
-        "ai-sdlc": "./dist/index.js"
-      },
-      files: [
-        "dist",
-        "templates"
-      ],
-      scripts: {
-        sync: "node scripts/sync.mjs",
-        prebuild: "node scripts/sync.mjs",
-        build: 'node node_modules/esbuild/bin/esbuild src/index.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist/index.js --banner:js="#!/usr/bin/env node"',
-        start: "node dist/index.js"
-      },
-      devDependencies: {
-        "@types/node": "^22.0.0",
-        chalk: "^5.3.0",
-        commander: "^12.1.0",
-        esbuild: "^0.28.0",
-        typescript: "^5.5.0"
-      },
-      engines: {
-        node: ">=18"
-      },
-      repository: {
-        type: "git",
-        url: "https://github.com/HarmohanSingh13/apex.git"
-      }
-    };
-  }
-});
 
 // node_modules/chalk/source/vendor/ansi-styles/index.js
 var ANSI_BACKGROUND_OFFSET = 10;
@@ -735,15 +681,15 @@ async function promptForAgents() {
 }
 
 // src/index.ts
-var pkg = require_package();
+var VERSION = "1.0.0";
 var args = process.argv.slice(2);
 if (args.includes("--version") || args.includes("-v")) {
-  console.log(pkg.version);
+  console.log(VERSION);
   process.exit(0);
 }
 if (args.includes("--help") || args.includes("-h")) {
   console.log(`
-  ai-sdlc v${pkg.version}
+  ai-sdlc v${VERSION}
   Enterprise AI-SDLC Framework
 
   Usage:

@@ -1,18 +1,17 @@
 import { installCommand } from './commands/install.js';
 
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pkg = require('../package.json') as { version: string };
+const VERSION = '1.0.0';
 
 const args = process.argv.slice(2);
 
 if (args.includes('--version') || args.includes('-v')) {
-  console.log(pkg.version);
+  console.log(VERSION);
   process.exit(0);
 }
 
 if (args.includes('--help') || args.includes('-h')) {
   console.log(`
-  ai-sdlc v${pkg.version}
+  ai-sdlc v${VERSION}
   Enterprise AI-SDLC Framework
 
   Usage:
