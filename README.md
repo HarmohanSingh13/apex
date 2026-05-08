@@ -29,12 +29,6 @@ If no agent directory is detected, `.agents/` is installed as a universal fallba
 ```bash
 # Install for all agents, not just auto-detected ones
 npx github:HarmohanSingh13/apex install --all
-
-# Preview what would be installed without writing any files
-npx github:HarmohanSingh13/apex install --dry-run
-
-# Add a prefix to all installed skill/rule names
-npx github:HarmohanSingh13/apex install --prefix=sdlc
 ```
 
 ## What Gets Installed
@@ -119,12 +113,12 @@ scripts/sync.js         # Syncs .agents/ etc. into templates/ before build
 
 ## Updating the Framework
 
-When you modify any agent files (`.agents/`, `.claude/`, etc.), rebuild and commit:
+When you modify any workflow files (`.agents/`, `.claude/`, etc.), rebuild and commit:
 
 ```bash
 npm run build           # syncs templates/ + compiles TypeScript
 git add dist/ templates/
-git commit -m "chore: update skills"
+git commit -m "chore: update workflows"
 git push
 ```
 
