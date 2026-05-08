@@ -1,0 +1,26 @@
+parameters:                                                                                                              
+  - name: azureServiceConnection
+    type: string
+  - name: webappName
+    type: string
+
+steps:
+  - task: DownloadBuildArtifacts@0
+    displayName: Download Angular Build Artifact                                                                               
+    inputs:
+      buildType: 'current'                                                                                               
+      downloadType: 'single'
+      artifactName: '$(Build.DefinitionName)'
+      downloadPath: '$(System.DefaultWorkingDirectory)'
+
+  - task: AzureRmWebAppDeployment@4
+    displayName: Deploy to Azure App Service                                                                             
+    inputs:
+      ConnectionType: 'AzureRM'        
+      azureSubscription: '${{ parameters.azureServiceConnection }}'
+      appType: 'webApp'                                                                                                          
+      WebAppName: '${{ parameters.webappName }}'
+      packageForLinux: '$(System.DefaultWorkingDirectory)/$(Build.DefinitionName)'                                       
+      enableCustomDeployment: true
+      DeploymentType: 'zipDeploy'                                                                                                
+      RemoveAdditionalFilesFlag: true

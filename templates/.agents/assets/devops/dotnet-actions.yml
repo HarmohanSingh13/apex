@@ -1,0 +1,89 @@
+---
+parameters:
+  - name: buildAgentPool
+    type: string
+  - name: snykServiceConnection
+    type: string
+  - name: snykToken
+    type: string
+  - name: skipSecurityScan
+    type: string
+  - name: checkmarxProjectName
+    type: string
+  - name: checkmarxUsername
+    type: string
+  - name: checkmarxPassword
+    type: string
+  - name: checkmarxPreset
+    type: string
+  - name: azureServiceConnection
+    type: string
+  - name: webappName
+    type: string
+  - name: virtualDirectory
+    type: string
+  - name: dbProvider
+    type: string
+  - name: dbConnectionString
+    type: string
+  - name: jwtSecret
+    type: string
+  - name: aspnetcoreEnvironment  # App Service ASPNETCORE_ENVIRONMENT value
+    type: string                  # 'Development' for dev, 'Production' for prod
+    default: 'Production'         # Sourced from variable group — never hardcode here
+
+stages:
+  # The Build Stage will run when the pipeline is triggered from any branch other than the main.
+  - stage: "ApplicationBuild"
+    condition: ne(variables['Build.SourceBranch'], 'refs/heads/main')
+    displayName: "Application Build"
+    jobs:
+      - job: DotNetCoreBuild
+        displayName: ".NET Core Build"
+        pool:
+          name: ${{ parameters.buildAgentPool }}
+        steps:
+          - template: common/dotnetBuild.yml
+
+  # The Security Scan Stage will run if the application build stage is successful.
+  # Besides, If the pipeline build triggered by a pull request, this stage will run only if the pull request is from Release to Main branch.
+  # If the pipeline build trigger is not by a pull request and from any develop branch, this stage will check the value skipSecurityScan value and run if the value is false.
+  - stage: "SecurityScan"
+    condition: and(succeeded('ApplicationBuild'), or( and(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['System.PullRequest.TargetBranch'], 'refs/heads/main'), eq(variables['System.PullRequest.SourceBranch'], 'refs/heads/release')), and(ne(variables['Build.Reason'], 'PullRequest'), eq(variables['skipSecurityScan'], 'false'))))
+    displayName: "Security Scans"
+    jobs:
+      - job: DotNetSecurityScan
+        displayName: "SCA & SAST Scan"
+        pool:
+          name: ${{ parameters.buildAgentPool }}
+        steps:
+          - template: common/securityScans.yml
+            parameters:
+              snykServiceConnection: '${{ parameters.snykServiceConnection }}'
+              snykToken: '${{ parameters.snykToken }}'
+              checkmarxProjectName: '${{ parameters.checkmarxProjectName }}'
+              checkmarxUsername: '${{ parameters.checkmarxUsername }}'
+              checkmarxPassword: '${{ parameters.checkmarxPassword }}'
+              checkmarxPreset: '${{ parameters.checkmarxPreset }}'
+
+  # The Application Release Stage will run if the application build stage is successful.
+  # Besides, If the pipeline build triggered by a pull request, this stage will run only if the pull request is from Release to Main branch.
+  # If the pipeline build trigger is not by a pull request, this stage will trigger only if the source branch is develop or developers/*
+  - stage: "ApplicationRelease"
+    condition: and(succeeded('ApplicationBuild'), or(and(eq(variables['Build.Reason'], 'PullRequest'), eq(variables['System.PullRequest.TargetBranch'], 'refs/heads/main'), eq(variables['System.PullRequest.SourceBranch'], 'refs/heads/release')), and(ne(variables['Build.Reason'], 'PullRequest'), or(eq(variables['Build.SourceBranch'], 'refs/heads/develop'), startsWith(variables['Build.SourceBranch'], 'refs/heads/developers/')))))
+    displayName: "Application Release"
+    jobs:
+      - job: ApplicationRelease
+        displayName: "Application Deployment"
+        pool:
+          name: ${{ parameters.buildAgentPool }}
+        steps:
+          - template: common/dotnetRelease.yml
+            parameters:
+              azureServiceConnection: '${{ parameters.azureServiceConnection }}'
+              webappName: '${{ parameters.webappName }}'
+              virtualDirectory: '${{ parameters.virtualDirectory }}'
+              dbProvider: '${{ parameters.dbProvider }}'
+              dbConnectionString: '${{ parameters.dbConnectionString }}'
+              jwtSecret: '${{ parameters.jwtSecret }}'
+              aspnetcoreEnvironment: '${{ parameters.aspnetcoreEnvironment }}'
